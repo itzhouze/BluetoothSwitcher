@@ -212,12 +212,44 @@ internal static class OverlayRenderer
 
         if (row.State.IsDefault)
             right = DrawPill(g, "AKTIV", null, Theme.Success, right, center, s) - 10 * s;
-        if (row.State.Battery is { } battery)
+        // Von rechts nach links zeichnen → rückwärts iterieren, damit L links von R steht.
+        for (var i = row.State.Batteries.Count - 1; i >= 0; i--)
         {
-            var color = battery < 20 ? Theme.Danger : battery < 40 ? Theme.Warning : Theme.TextSecondary;
-            right = DrawPill(g, $"{battery} %", Theme.BatteryGlyph(battery), color, right, center, s) - 10 * s;
+            var battery = row.State.Batteries[i];
+            var percent = battery.Percent;
+            var color = percent < 20 ? Theme.Danger : percent < 40 ? Theme.Warning : Theme.TextSecondary;
+            right = DrawPill(g, $"{percent} %", Theme.BatteryGlyph(percent), color, right, center, s, battery.Side) - 10 * s;
         }
+        if (row.State.SignalBars is { } bars)
+            right = DrawSignal(g, bars, right, center, s) - 10 * s;
         return right;
+    }
+
+    /// <summary>Funksignal als 4 ansteigende Balken in einer Pill (gefüllt = Stärke).</summary>
+    /// <returns>Linke Kante der Pill.</returns>
+    private static float DrawSignal(Graphics g, int bars, float right, float center, float s)
+    {
+        var color = bars >= 3 ? Theme.TextSecondary : bars == 2 ? Theme.Warning : Theme.Danger;
+        var fill = bars >= 3 ? Theme.TextPrimary : color; // gefüllte Balken deutlich heller als leere
+        var h = 36 * s;
+        var barWidth = 4.5f * s;
+        var gap = 3f * s;
+        var w = 4 * barWidth + 3 * gap + 28 * s;
+        var rect = new RectangleF(right - w, center - h / 2, w, h);
+
+        Theme.FillRounded(g, rect, h / 2, Theme.WithAlpha(color, 36));
+        Theme.StrokeRounded(g, rect, h / 2, Theme.WithAlpha(color, 80), Math.Max(1f, 1.2f * s));
+
+        var bottom = center + 9 * s;
+        var x = rect.Left + 14 * s;
+        for (var i = 0; i < 4; i++)
+        {
+            var barHeight = (6 + i * 4) * s;
+            var bar = new RectangleF(x, bottom - barHeight, barWidth, barHeight);
+            Theme.FillRounded(g, bar, barWidth / 2, i < bars ? fill : Color.FromArgb(38, 255, 255, 255));
+            x += barWidth + gap;
+        }
+        return rect.Left;
     }
 
     private static float DrawGlyphCircle(Graphics g, string glyph, Color color, float right, float center, float s)
@@ -231,21 +263,35 @@ internal static class OverlayRenderer
         return rect.Left - 14 * s;
     }
 
+    /// <param name="side">Optionales Kürzel ("L"/"R") als runder Badge am Anfang der Pill.</param>
     /// <returns>Linke Kante der Pill.</returns>
-    private static float DrawPill(Graphics g, string text, string? glyph, Color color, float right, float center, float s)
+    private static float DrawPill(Graphics g, string text, string? glyph, Color color, float right, float center, float s,
+        string? side = null)
     {
         using var font = Theme.PixelFont(Theme.TextFontSmall, 18 * s, FontStyle.Bold);
         using var iconFont = Theme.PixelFont(Theme.IconFont, 18 * s);
         var textSize = Theme.Measure(g, text, font);
         var glyphWidth = glyph is null ? 0 : Theme.Measure(g, glyph, iconFont).Width + 8 * s;
         var h = 36 * s;
-        var w = textSize.Width + glyphWidth + 30 * s;
+        var badge = h - 10 * s;
+        var badgeWidth = side is null ? 0 : badge + 8 * s;
+        var padLeft = side is null ? 15 * s : 5 * s;
+        var w = padLeft + badgeWidth + glyphWidth + textSize.Width + 15 * s;
         var rect = new RectangleF(right - w, center - h / 2, w, h);
 
         Theme.FillRounded(g, rect, h / 2, Theme.WithAlpha(color, 36));
         Theme.StrokeRounded(g, rect, h / 2, Theme.WithAlpha(color, 80), Math.Max(1f, 1.2f * s));
 
-        var x = rect.Left + 15 * s;
+        var x = rect.Left + padLeft;
+        if (side is not null)
+        {
+            var circle = new RectangleF(x, center - badge / 2, badge, badge);
+            using (var brush = new SolidBrush(Theme.WithAlpha(color, 90)))
+                g.FillEllipse(brush, circle);
+            using var sideFont = Theme.PixelFont(Theme.TextFontSmall, 15 * s, FontStyle.Bold);
+            Theme.DrawTextCentered(g, side, sideFont, Color.White, circle);
+            x += badgeWidth;
+        }
         if (glyph is not null)
         {
             Theme.DrawTextLeft(g, glyph, iconFont, color, x, center, glyphWidth + 4 * s);

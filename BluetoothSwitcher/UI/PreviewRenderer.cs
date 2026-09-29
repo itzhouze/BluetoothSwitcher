@@ -46,6 +46,30 @@ internal static class PreviewRenderer
         bitmap.Save(path, ImageFormat.Png);
     }
 
+    /// <summary>Lauscht 15 s auf Apple-BLE-Pakete und protokolliert Rohdaten + ausgewerteten Akku.</summary>
+    public static void ScanAirPods(string path)
+    {
+        var lines = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        var thread = new Thread(() =>
+        {
+            using var watcher = new AppleBatteryWatcher();
+            watcher.RawApplePacket += (rssi, data) =>
+            {
+                var parsed = AppleBatteryWatcher.TryParseProximityPairing(data, out var b)
+                    ? $"  → L {b.Left} R {b.Right} Case {b.Case} (lädt L:{b.LeftCharging} R:{b.RightCharging})"
+                    : "";
+                lines.Enqueue($"{DateTime.Now:HH:mm:ss.fff} RSSI {rssi,4} type 0x{(data.Length > 0 ? data[0] : 0):X2} {Convert.ToHexString(data)}{parsed}");
+            };
+            watcher.Start();
+            lines.Enqueue($"läuft: {watcher.IsRunning}");
+            Thread.Sleep(15000);
+        });
+        thread.SetApartmentState(ApartmentState.MTA);
+        thread.Start();
+        thread.Join();
+        File.WriteAllLines(path, lines);
+    }
+
     /// <summary>Prüft IPolicyConfig ohne Änderung: setzt das aktuelle Standardgerät erneut als Standard.</summary>
     public static void SelfTest(string path)
     {
@@ -105,13 +129,13 @@ internal static class PreviewRenderer
 
         return
         [
-            new(new DeviceState(Dev("Sony WH-1000XM4", DeviceKind.Headphones, true), Ep("Kopfhörer (WH-1000XM4)", EndpointState.Active, true), true, 80)),
-            new(new DeviceState(Dev("AirPods Pro", DeviceKind.Earbuds, true), Ep("Kopfhörer (AirPods)", EndpointState.Unplugged, true), false, null)),
-            new(new DeviceState(Dev("LG Soundbar", DeviceKind.Soundbar, true), Ep("Lautsprecher (LG SN5)", EndpointState.Unplugged, true), false, null))
+            new(new DeviceState(Dev("AirPods 4", DeviceKind.Earbuds, true), Ep("Kopfhörer (AirPods)", EndpointState.Active, true), true, [new BatteryLevel("L", 80), new BatteryLevel("R", 100)], SignalBars: 3)),
+            new(new DeviceState(Dev("Sony WH-1000XM4", DeviceKind.Headphones, true), Ep("Kopfhörer (WH-1000XM4)", EndpointState.Active, true), false, [new BatteryLevel(null, 30)])),
+            new(new DeviceState(Dev("LG Soundbar", DeviceKind.Soundbar, true), Ep("Lautsprecher (LG SN5)", EndpointState.Unplugged, true), false, []))
             {
                 Status = RowStatus.Busy, Message = "Verbinde …",
             },
-            new(new DeviceState(Dev("TV-Lautsprecher", DeviceKind.Tv, false), Ep("LG TV (HDMI)", EndpointState.Unplugged, false), false, null)),
+            new(new DeviceState(Dev("TV-Lautsprecher", DeviceKind.Tv, false), Ep("LG TV (HDMI)", EndpointState.Unplugged, false), false, [])),
         ];
     }
 }

@@ -16,6 +16,9 @@ internal static class Program
             case ["--selftest", var output]:
                 UI.PreviewRenderer.SelfTest(output);
                 return;
+            case ["--scan-airpods", var scanOutput]:
+                UI.PreviewRenderer.ScanAirPods(scanOutput);
+                return;
             case ["--settings"]:
                 ApplicationConfiguration.Initialize();
                 Application.Run(new UI.SettingsForm(Config.ConfigStore.LoadOrCreate(), Audio.AudioEndpointService.GetRenderEndpoints));

@@ -100,8 +100,8 @@ internal sealed class OverlayForm : Form
         var device = new DeviceConfig { Name = "Warmup", Bluetooth = true };
         var endpoint = new EndpointInfo("warmup", "Warmup", EndpointState.Active, Guid.Empty, true);
         var model = new CardModel();
-        model.Rows.Add(new OverlayRow(new DeviceState(device, endpoint, true, 50)));
-        model.Rows.Add(new OverlayRow(new DeviceState(device, endpoint, false, null)) { Status = RowStatus.Busy });
+        model.Rows.Add(new OverlayRow(new DeviceState(device, endpoint, true, [new BatteryLevel("L", 50), new BatteryLevel(null, 50)], SignalBars: 2)));
+        model.Rows.Add(new OverlayRow(new DeviceState(device, endpoint, false, [])) { Status = RowStatus.Busy });
 
         _card.ClearChromeCache();
         foreach (var screen in Screen.AllScreens.Take(3))

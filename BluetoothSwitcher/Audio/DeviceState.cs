@@ -14,8 +14,14 @@ internal enum Availability
     Unavailable,
 }
 
+/// <summary>Ein Akkuwert; <paramref name="Side"/> ist "L"/"R" bei Earbuds, sonst null.</summary>
+internal sealed record BatteryLevel(string? Side, byte Percent);
+
 /// <summary>Momentaufnahme eines konfigurierten Geräts für die Anzeige.</summary>
-internal sealed record DeviceState(DeviceConfig Config, EndpointInfo? Endpoint, bool IsDefault, byte? Battery)
+/// <param name="Batteries">Bekannte Akkuwerte (leer = keine Angabe), bei Earbuds je Ohrhörer im Einsatz.</param>
+/// <param name="SignalBars">Funksignal 0–4 Balken, sofern bekannt (derzeit nur AirPods/Beats).</param>
+internal sealed record DeviceState(DeviceConfig Config, EndpointInfo? Endpoint, bool IsDefault, IReadOnlyList<BatteryLevel> Batteries,
+    int? SignalBars = null)
 {
     public Availability Availability => Endpoint?.State switch
     {

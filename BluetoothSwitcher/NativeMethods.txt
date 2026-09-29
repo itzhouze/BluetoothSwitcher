@@ -54,3 +54,6 @@ DwmSetWindowAttribute
 GetKeyState
 IAudioMeterInformation
 SendInput
+RoActivateInstance
+WindowsCreateString
+WindowsDeleteString
