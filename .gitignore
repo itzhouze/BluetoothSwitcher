@@ -1,0 +1,16 @@
+# Build-Ausgaben
+bin/
+obj/
+publish/
+
+# Visual Studio / Rider / VS Code (benutzerspezifisch)
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.pubxml.user
+
+# Sonstiges
+*.log
+Thumbs.db
