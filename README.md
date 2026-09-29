@@ -1,50 +1,44 @@
 # BT-Switcher
 
-Audio-Ausgabe am HTPC vom Sofa aus wechseln – per Hotkey, ohne Maus, ohne Windows-Einstellungen.
+**Switch your PC's audio output from the couch — one hotkey, no mouse, no Windows settings.**
 
-Ein Tastendruck (Standard: `Ctrl+Alt+B`) legt ein halbtransparentes, TV-taugliches Overlay über die laufende Vollbild-App. Mit den Pfeiltasten ein Gerät wählen, `Enter` drücken: Bluetooth-Geräte werden bei Bedarf verbunden und das Gerät wird als Windows-Standard-Ausgabe gesetzt. Danach bekommt die Vollbild-App den Fokus zurück.
+Built for a living-room HTPC running a fullscreen media app (Stremio, Kodi, Plex, …) controlled with a small wireless keyboard. Press the hotkey, pick your headphones or soundbar with the arrow keys, done — Bluetooth devices get connected automatically and your movie keeps running in fullscreen.
 
-## Funktionen
+<p align="center"><img src="docs/overlay.png" width="560" alt="BT-Switcher overlay"></p>
 
-- Globaler Hotkey, funktioniert auch über Vollbild-Apps (erneuter Druck blendet das Overlay wieder aus)
-- Bluetooth-Kopfhörer, -Earbuds und -Lautsprecher verbinden sowie HDMI-/USB-Ausgaben umschalten
-- Beim Wechsel das vorherige Bluetooth-Gerät trennen (pro Gerät einstellbar)
-- Akkustand bei unterstützten Geräten
-- Laufenden Film pausieren, während ein Bluetooth-Gerät verbindet
-- Ergebnis-Toasts, die den Fokus nicht stehlen
-- Overlay schließt sich nach Inaktivität automatisch
-- Tray-Menü mit Einstellungen (Hotkey-Aufnahme, Geräte-Editor), Autostart und Logs
+## Features
 
-## Bedienung im Overlay
+- **One hotkey** (`Ctrl+Alt+B` by default) opens a TV-readable overlay on top of any fullscreen app
+- **Connects Bluetooth devices** on demand and sets them as the Windows default output
+- **Wired outputs too** — HDMI (TV speakers), USB, analog
+- **Instant** — overlay appears in < 35 ms, focus goes straight back to your media app
+- Battery level, auto-disconnect of the previous BT device, pauses playback while connecting
+- Lives in the system tray, starts with Windows, tiny (< 1 MB single `.exe`)
 
-| Taste | Aktion |
+## Usage
+
+| Key | Action |
 |---|---|
-| `↑` `↓` | Gerät auswählen |
-| `1`–`9` | Gerät direkt wählen |
-| `Enter` | Umschalten |
-| `Esc` / Hotkey | Schließen |
+| `↑` `↓` / `1`–`9` | Select device |
+| `Enter` | Switch |
+| `Esc` / hotkey | Close |
 
-## Voraussetzungen
+Devices, hotkey and look are configured via **tray icon → Einstellungen** (or `%APPDATA%\BTSwitcher\config.json`).
 
-- Windows 10/11 (x64)
-- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
+> The UI is currently in German.
 
-## Bauen
+## Install
+
+Requires Windows 10/11 x64 and the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
+git clone https://github.com/itzhouze/BluetoothSwitcher.git
+cd BluetoothSwitcher
 dotnet publish BluetoothSwitcher -c Release
 ```
 
-Ergebnis: eine einzelne `BTSwitcher.exe` (< 1 MB) unter `BluetoothSwitcher\bin\Release\net10.0-windows\win-x64\publish\`.
+Run `BTSwitcher.exe` from `BluetoothSwitcher\bin\Release\net10.0-windows\win-x64\publish\` and enable *Mit Windows starten* in the tray menu.
 
-## Konfiguration & Logs
+## How it works
 
-- Einstellungen: `%APPDATA%\BTSwitcher\config.json` (wird beim ersten Start aus den vorhandenen Audiogeräten erzeugt)
-- Logs: `%APPDATA%\BTSwitcher\logs\`
-
-## Technik
-
-- C# / .NET 10 WinForms, Win32-Interop über [CsWin32](https://github.com/microsoft/CsWin32)
-- Bluetooth-Verbindung über `KSPROPSETID_BtAudio` (`KSPROPERTY_ONESHOT_RECONNECT` / `_DISCONNECT`), derselbe Mechanismus wie „Verbinden“ in der Windows-Soundsteuerung
-- Standardgerät über `IPolicyConfig`
-- Overlay als Per-Pixel-Alpha-Layered-Window (`UpdateLayeredWindow`)
+Bluetooth audio is (re)connected via the kernel-streaming property `KSPROPSETID_BtAudio` — the same mechanism as *Connect* in the Windows sound panel. The default device is set through `IPolicyConfig`. The overlay is a per-pixel-alpha layered window, so the app behind it stays visible. C# / .NET 10 WinForms, Win32 interop via [CsWin32](https://github.com/microsoft/CsWin32), no other dependencies.
